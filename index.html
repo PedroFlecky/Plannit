@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <!-- PWA / iPhone -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Plannit">
+  <meta name="theme-color" content="#0d0d0d">
+
+  <title>Plannit</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════════════════════
+       HEADER
+  ══════════════════════════════ -->
+  <header id="header">
+    <div class="header-left">
+      <button id="headerBack" class="header-back" onclick="goToToday()" style="display:none">← Hoje</button>
+      <span class="header-date-sub" id="hSub"></span>
+      <span class="header-date-main" id="hMain"></span>
+    </div>
+    <div class="header-right">
+      <span id="syncIndicator" class="sync-indicator" title="Status do sync"></span>
+      <button class="header-settings-btn" onclick="openSettings()" aria-label="Configurações">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06
+                   a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4
+                   0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0
+                   1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0
+                   0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0
+                   0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9
+                   4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1
+                   1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65
+                   1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65
+                   1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <div class="status-wrap" id="statusWrap">
+        <div class="status-pill" id="statusPill" onclick="cycleStatus()">—</div>
+        <button class="status-chevron" id="statusChevron"
+                onclick="toggleStatusDropdown(event)" aria-label="Escolher status">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2,4 6,8 10,4"/>
+          </svg>
+        </button>
+        <div class="status-dropdown hidden" id="statusDropdown"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════
+       MAIN (scrollable)
+  ══════════════════════════════ -->
+  <main id="main">
+
+    <!-- ── VIEW: HOJE ── -->
+    <div id="view-today" class="view active">
+      <div class="day-grid">
+        <div class="day-col">
+
+      <!-- 01 · Foco do Dia -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-num">01</span>
+          <span class="card-title">FOCO DO DIA</span>
+        </div>
+        <div class="big-goal-row">
+          <button class="circle-check" id="bigCheck" onclick="toggleBig()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+          <div class="big-goal-wrap" onclick="editBig()">
+            <span id="bigDisplay" class="big-text is-placeholder">Qual é o seu grande objetivo hoje?</span>
+            <input id="bigInput" class="big-input hidden" type="text"
+                   placeholder="Digite seu grande objetivo..."
+                   onblur="saveBig()"
+                   onkeydown="if(event.key==='Enter'||event.key==='Escape') this.blur()">
+          </div>
+        </div>
+      </section>
+
+      <!-- Ação: montar dia automaticamente -->
+      <button class="montar-btn" id="montarBtn" onclick="montarDia()">
+        <span class="montar-icon">⚡</span>
+        <span class="montar-label">Montar meu dia</span>
+        <span class="montar-sub">preenche com o backlog</span>
+      </button>
+
+      <!-- 02 · Objetivos 1·3·5 -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-num">02</span>
+          <span class="card-title">OBJETIVOS DO DIA</span>
+          <span class="card-tag">1 · 3 · 5</span>
+        </div>
+
+        <div class="task-group">
+          <div class="task-group-head">
+            <span>Médios</span>
+            <span class="task-count" id="medCount">0/3</span>
+          </div>
+          <div id="medList" class="task-list"></div>
+        </div>
+
+        <div class="task-group">
+          <div class="task-group-head">
+            <span>Pequenos</span>
+            <span class="task-count" id="smallCount">0/5</span>
+          </div>
+          <div id="smallList" class="task-list"></div>
+        </div>
+      </section>
+
+        </div><!-- /day-col esquerda -->
+        <div class="day-col">
+
+      <!-- 03 · Equilíbrio 8·8·8 -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-num">03</span>
+          <span class="card-title">EQUILÍBRIO</span>
+          <span class="card-tag">8 · 8 · 8</span>
+        </div>
+        <div class="balance-grid">
+
+          <div class="bal-item">
+            <div class="bal-top">
+              <span class="bal-dot work-dot"></span>
+              <span class="bal-name">TRABALHO</span>
+            </div>
+            <div class="bal-controls">
+              <button class="bal-btn" onclick="adjustBal('work',-1)">−</button>
+              <div class="bal-val-wrap">
+                <span id="workH" class="bal-val">8</span>
+                <span class="bal-unit">h</span>
+              </div>
+              <button class="bal-btn" onclick="adjustBal('work',1)">+</button>
+            </div>
+            <div class="bal-track"><div id="workFill" class="bal-fill work-fill"></div></div>
+          </div>
+
+          <div class="bal-item">
+            <div class="bal-top">
+              <span class="bal-dot personal-dot"></span>
+              <span class="bal-name">PESSOAL</span>
+            </div>
+            <div class="bal-controls">
+              <button class="bal-btn" onclick="adjustBal('personal',-1)">−</button>
+              <div class="bal-val-wrap">
+                <span id="personalH" class="bal-val">8</span>
+                <span class="bal-unit">h</span>
+              </div>
+              <button class="bal-btn" onclick="adjustBal('personal',1)">+</button>
+            </div>
+            <div class="bal-track"><div id="personalFill" class="bal-fill personal-fill"></div></div>
+          </div>
+
+          <div class="bal-item">
+            <div class="bal-top">
+              <span class="bal-dot sleep-dot"></span>
+              <span class="bal-name">SONO</span>
+            </div>
+            <div class="bal-controls">
+              <button class="bal-btn" onclick="adjustBal('sleep',-1)">−</button>
+              <div class="bal-val-wrap">
+                <span id="sleepH" class="bal-val">8</span>
+                <span class="bal-unit">h</span>
+              </div>
+              <button class="bal-btn" onclick="adjustBal('sleep',1)">+</button>
+            </div>
+            <div class="bal-track"><div id="sleepFill" class="bal-fill sleep-fill"></div></div>
+          </div>
+
+        </div>
+        <div class="bal-total-row">
+          <span>Total</span>
+          <span id="balTotal" class="bal-total">24h ✓</span>
+        </div>
+      </section>
+
+      <!-- 04 · Captura Rápida -->
+      <section class="card">
+        <div class="card-header">
+          <span class="card-num">04</span>
+          <span class="card-title">CAPTURA RÁPIDA</span>
+        </div>
+        <div class="capture-row">
+          <input id="captureInput" class="text-input" type="text"
+                 placeholder="Ideia, insight, lembrete..."
+                 onkeydown="if(event.key==='Enter') addCapture()">
+          <button class="add-btn" onclick="addCapture()">+</button>
+        </div>
+        <div id="captureList" class="item-list"></div>
+      </section>
+
+        </div><!-- /day-col direita -->
+      </div><!-- /day-grid -->
+
+      <!-- Fechar Dia — aparece quando há pendências -->
+      <div id="fechaDiaSection" class="fechar-dia-section hidden">
+        <button class="fechar-dia-btn" onclick="fecharDia()">
+          <span class="fechar-dia-icon">↓</span>
+          <span class="fechar-dia-label">Fechar Dia</span>
+          <span id="fechaDiaBadge" class="fechar-dia-badge">0</span>
+        </button>
+      </div>
+
+      <div class="safe-bottom"></div>
+    </div><!-- /view-today -->
+
+    <!-- ── VIEW: PLANEJAR ── -->
+    <div id="view-plan" class="view">
+      <section class="card">
+
+        <!-- Navegação mês -->
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="prevMonth()" aria-label="Mês anterior">&#8249;</button>
+          <div class="cal-nav-center">
+            <span id="calMonthLabel" class="cal-month-label"></span>
+            <button class="cal-today-btn" onclick="calJumpToday()">↩ ir para hoje</button>
+          </div>
+          <button class="cal-nav-btn" onclick="nextMonth()" aria-label="Próximo mês">&#8250;</button>
+        </div>
+
+        <!-- Cabeçalho dias da semana -->
+        <div class="cal-weekdays">
+          <span>DOM</span><span>SEG</span><span>TER</span>
+          <span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span>
+        </div>
+
+        <!-- Grade do calendário -->
+        <div id="calGrid" class="cal-grid"></div>
+
+      </section>
+      <div class="safe-bottom"></div>
+    </div>
+
+    <!-- ── VIEW: BACKLOG ── -->
+    <div id="view-backlog" class="view">
+      <section class="card">
+        <div class="card-header">
+          <span class="card-num">↓</span>
+          <span class="card-title">BACKLOG</span>
+          <span id="backlogCount" class="card-tag">0</span>
+        </div>
+
+        <!-- Formulário de criação estruturada -->
+        <div class="bl-form">
+          <div class="capture-row">
+            <input id="backlogInput" class="text-input" type="text"
+                   placeholder="Nome da tarefa..."
+                   onkeydown="if(event.key==='Enter') addBacklog()">
+          </div>
+          <div class="bl-meta-row">
+
+            <!-- Linha 1: Porte -->
+            <div class="bl-meta-line">
+              <span class="bl-meta-label">Porte</span>
+              <div class="bl-chip-group">
+                <button class="bl-chip is-active" data-group="porte" data-val="pequena" onclick="selectChip(this)">Pequena</button>
+                <button class="bl-chip"           data-group="porte" data-val="media"   onclick="selectChip(this)">Média</button>
+                <button class="bl-chip"           data-group="porte" data-val="grande"  onclick="selectChip(this)">Grande</button>
+              </div>
+            </div>
+
+            <!-- Linha 2: Tipo + botão adicionar -->
+            <div class="bl-meta-line">
+              <span class="bl-meta-label">Tipo</span>
+              <div class="bl-chip-group">
+                <button class="bl-chip is-active" data-group="tipo" data-val="unica"      onclick="selectChip(this)">Única</button>
+                <button class="bl-chip"           data-group="tipo" data-val="recorrente" onclick="selectChip(this)">↻ Recorrente</button>
+              </div>
+              <button class="add-btn" onclick="addBacklog()">+</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Filtros do Backlog -->
+        <div class="filter-row">
+          <button class="ftab is-active" data-filtro-group="backlog" onclick="setBacklogFiltro('todas',this)">Todas</button>
+          <button class="ftab"           data-filtro-group="backlog" onclick="setBacklogFiltro('unicas',this)">Únicas</button>
+          <button class="ftab"           data-filtro-group="backlog" onclick="setBacklogFiltro('recorrentes',this)">Recorrentes</button>
+        </div>
+
+        <div id="backlogList" class="bl-list"></div>
+      </section>
+      <div class="safe-bottom"></div>
+    </div>
+
+    <!-- ── VIEW: RETROSPECTIVA ── -->
+    <div id="view-retro" class="view">
+      <section class="card">
+        <div class="card-header">
+          <span class="card-num">◷</span>
+          <span class="card-title">RETROSPECTIVA</span>
+          <span id="retroStreak" class="streak-badge"></span>
+        </div>
+        <div id="retroStats" class="retro-stats"></div>
+
+        <!-- Filtros do Histórico -->
+        <div class="filter-row">
+          <button class="ftab is-active" data-filtro-group="retro" onclick="setRetroFiltro('7',this)">7 dias</button>
+          <button class="ftab"           data-filtro-group="retro" onclick="setRetroFiltro('30',this)">30 dias</button>
+          <button class="ftab"           data-filtro-group="retro" onclick="setRetroFiltro('todos',this)">Todos</button>
+        </div>
+
+        <div id="retroList" class="retro-list"></div>
+      </section>
+      <div class="safe-bottom"></div>
+    </div>
+
+    <!-- ── VIEW: METAS ── -->
+    <div id="view-metas" class="view">
+      <section class="card">
+        <div class="card-header">
+          <span class="card-num">◎</span>
+          <span class="card-title">METAS</span>
+          <span id="metasCount" class="card-tag">0</span>
+        </div>
+
+        <!-- Formulário de criação -->
+        <div class="bl-form">
+          <div class="capture-row">
+            <input id="metaNome" class="text-input" type="text"
+                   placeholder="Ex: Academia 4x por semana..."
+                   onkeydown="if(event.key==='Enter') addMeta()">
+          </div>
+          <div class="bl-meta-row">
+
+            <!-- Linha 0: Tipo de meta -->
+            <div class="bl-meta-line">
+              <span class="bl-meta-label">Tipo</span>
+              <div class="bl-chip-group">
+                <button class="bl-chip is-active" data-group="tipo-meta" data-val="manual"
+                        onclick="selectChip(this);updateMetaForm()">✎ Manual</button>
+                <button class="bl-chip" data-group="tipo-meta" data-val="auto-planner"
+                        onclick="selectChip(this);updateMetaForm()">⚡ Auto</button>
+                <button class="bl-chip" data-group="tipo-meta" data-val="auto-recorrente"
+                        onclick="selectChip(this);updateMetaForm()">🔗 Recorrente</button>
+              </div>
+            </div>
+
+            <!-- Linha 1A: Fonte (só aparece quando ⚡ Auto selecionado) -->
+            <div class="bl-meta-line" id="metaFonteRow" style="display:none">
+              <span class="bl-meta-label">Contar</span>
+              <div class="bl-chip-group">
+                <button class="bl-chip is-active" data-group="fonte" data-val="grande-concluido"
+                        onclick="selectChip(this)">Grande ✓</button>
+                <button class="bl-chip" data-group="fonte" data-val="status-dominado"
+                        onclick="selectChip(this)">Ação & Foco</button>
+                <button class="bl-chip" data-group="fonte" data-val="tarefas-completas"
+                        onclick="selectChip(this)">Tarefas</button>
+              </div>
+            </div>
+
+            <!-- Linha 1B: Tarefa vinculada (só aparece quando 🔗 Recorrente selecionado) -->
+            <div class="bl-meta-line" id="metaTarefaRow" style="display:none">
+              <span class="bl-meta-label">Tarefa</span>
+              <select id="metaTarefaSelect" class="text-input meta-tarefa-sel">
+                <option value="">— selecione —</option>
+              </select>
+            </div>
+
+            <!-- Linha 2: Período -->
+            <div class="bl-meta-line">
+              <span class="bl-meta-label">Período</span>
+              <div class="bl-chip-group">
+                <button class="bl-chip is-active" data-group="periodo" data-val="semanal" onclick="selectChip(this)">Semanal</button>
+                <button class="bl-chip"           data-group="periodo" data-val="mensal"  onclick="selectChip(this)">Mensal</button>
+              </div>
+            </div>
+
+            <!-- Linha 3: Alvo + unidade + botão adicionar -->
+            <div class="bl-meta-line">
+              <span class="bl-meta-label">Alvo</span>
+              <div class="meta-alvo-ctrl">
+                <button class="bal-btn" onclick="adjustMetaAlvo(-1)">−</button>
+                <span id="metaAlvoDisplay" class="meta-alvo-num">5</span>
+                <button class="bal-btn" onclick="adjustMetaAlvo(1)">+</button>
+              </div>
+              <input id="metaUnidade" class="text-input meta-unidade" type="text" placeholder="vezes">
+              <button class="add-btn" onclick="addMeta()">+</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Filtros de Metas -->
+        <div class="filter-row" style="margin-top:14px">
+          <button class="ftab is-active" data-filtro-group="metas" onclick="setMetasFiltro('todas',this)">Todas</button>
+          <button class="ftab"           data-filtro-group="metas" onclick="setMetasFiltro('manual',this)">Manual</button>
+          <button class="ftab"           data-filtro-group="metas" onclick="setMetasFiltro('auto',this)">⚡ Auto</button>
+        </div>
+
+        <div id="metasList" class="meta-list"></div>
+      </section>
+      <div class="safe-bottom"></div>
+    </div>
+
+    <!-- ── VIEW: IA ── -->
+    <div id="view-ia" class="view ia-view">
+
+      <!-- Mensagens -->
+      <div class="ia-messages" id="iaMessages">
+        <!-- Boas-vindas inicial — gerada pelo JS -->
+      </div>
+
+      <!-- Área de input -->
+      <div class="ia-input-area">
+        <textarea
+          id="iaInput"
+          class="ia-input"
+          placeholder="Me conta o que você precisa fazer..."
+          rows="1"
+          onkeydown="iaInputKeydown(event)"
+          oninput="iaInputAutoResize(this)"></textarea>
+        <button class="ia-send-btn" id="iaSendBtn" onclick="sendIAMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+
+    </div><!-- /view-ia -->
+
+  </main>
+
+  <!-- ══════════════════════════════
+       PROGRESS + NAV (fixo em baixo)
+  ══════════════════════════════ -->
+  <div id="footer">
+
+    <div id="progressSection">
+      <div class="prog-row">
+        <span id="progText" class="prog-label">0 / 0 tarefas</span>
+        <span id="progPct" class="prog-pct">—</span>
+      </div>
+      <div class="prog-track">
+        <div id="progFill" class="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <nav id="bottomNav">
+      <button class="nav-tab active" id="tab-today" onclick="navToToday()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Hoje</span>
+      </button>
+      <button class="nav-tab" id="tab-plan" onclick="switchView('plan')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        <span>Planejar</span>
+      </button>
+      <button class="nav-tab" id="tab-backlog" onclick="switchView('backlog')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <circle cx="3" cy="6" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="3" cy="12" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="3" cy="18" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>Backlog</span>
+      </button>
+      <button class="nav-tab" id="tab-retro" onclick="switchView('retro')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>Histórico</span>
+      </button>
+      <button class="nav-tab" id="tab-metas" onclick="switchView('metas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>Metas</span>
+      </button>
+      <button class="nav-tab nav-tab--ia" id="tab-ia" onclick="switchView('ia')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L13.09 8.26L19 6L15.45 11.09L21 12L15.45 12.91L19 18L13.09 15.74L12 22L10.91 15.74L5 18L8.55 12.91L3 12L8.55 11.09L5 6L10.91 8.26L12 2Z"/>
+        </svg>
+        <span>IA</span>
+      </button>
+    </nav>
+
+  </div><!-- /footer -->
+
+<!-- ── MODAL: Enviar para dia ── -->
+<div id="dayPickerOverlay" class="overlay hidden" onclick="closeDayPicker()"></div>
+<div id="dayPickerModal" class="modal hidden">
+  <div class="modal-header">
+    <span class="modal-title">Enviar para um dia</span>
+    <button class="modal-close" onclick="closeDayPicker()">×</button>
+  </div>
+  <div class="modal-task-label" id="modalTaskLabel"></div>
+  <div id="dayPickerGrid" class="day-picker-grid"></div>
+</div>
+
+<!-- ── MODAL: Fechar Dia / Pendências ── -->
+<div id="fechaDiaOverlay" class="overlay hidden" onclick="closePendencias()"></div>
+<div id="fechaDiaModal" class="modal hidden">
+  <div class="modal-header">
+    <span class="modal-title">↓ Fechar Dia</span>
+    <button class="modal-close" onclick="closePendencias()">×</button>
+  </div>
+  <p id="fechaDiaSubtitle" class="fechar-dia-subtitle"></p>
+  <div id="pendenciasList" class="pendencias-list"></div>
+</div>
+
+<!-- ── TOAST de feedback ── -->
+<div id="appToast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ── INPUT oculto para importação ── -->
+<input type="file" id="importInput" accept=".json,application/json"
+       style="display:none" onchange="importFileSelected(this)">
+
+<!-- ── SETTINGS overlay + painel ── -->
+<div id="settingsOverlay" class="overlay hidden" onclick="closeSettings()"></div>
+<div id="settingsPanel" class="settings-panel hidden">
+  <div class="settings-handle"></div>
+  <div class="settings-header">
+    <span class="settings-title">Configurações</span>
+    <button class="modal-close" onclick="closeSettings()">×</button>
+  </div>
+
+  <!-- Seção: Conta (Firebase) -->
+  <div class="settings-section" id="accountSection">
+    <p class="settings-section-title">CONTA</p>
+
+    <!-- Estado: deslogado -->
+    <div id="loginRow" class="settings-account-row">
+      <div class="settings-account-info">
+        <span class="settings-account-name">Sem conta conectada</span>
+        <span class="settings-account-sub">Dados salvos apenas neste dispositivo</span>
+      </div>
+      <button class="settings-login-btn" onclick="fbLoginAction()">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Entrar com Google
+      </button>
+    </div>
+
+    <!-- Estado: logado -->
+    <div id="loggedRow" class="settings-account-row hidden">
+      <img id="userAvatar" class="settings-avatar" src="" alt="">
+      <div class="settings-account-info">
+        <span id="userName" class="settings-account-name"></span>
+        <span id="userEmail" class="settings-account-sub"></span>
+      </div>
+      <button class="settings-logout-btn" onclick="fbLogoutAction()">Sair</button>
+    </div>
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <div class="settings-section">
+    <p class="settings-section-title">DADOS</p>
+
+    <button class="settings-btn" onclick="exportData()">
+      <span class="settings-btn-icon">↑</span>
+      <div class="settings-btn-body">
+        <span class="settings-btn-label">Exportar backup</span>
+        <span class="settings-btn-sub">Salva um arquivo .json com todos seus dados</span>
+      </div>
+    </button>
+
+    <button class="settings-btn" onclick="document.getElementById('importInput').click()">
+      <span class="settings-btn-icon">↓</span>
+      <div class="settings-btn-body">
+        <span class="settings-btn-label">Importar backup</span>
+        <span class="settings-btn-sub">Restaura dados a partir de um arquivo .json</span>
+      </div>
+    </button>
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <div class="settings-section">
+    <p class="settings-section-title">PERIGO</p>
+
+    <button class="settings-btn is-danger" onclick="confirmResetApp()">
+      <span class="settings-btn-icon">⊘</span>
+      <div class="settings-btn-body">
+        <span class="settings-btn-label">Resetar app</span>
+        <span class="settings-btn-sub">Apaga todos os dados permanentemente</span>
+      </div>
+    </button>
+  </div>
+
+  <p class="settings-version">Plannit · v9 · dados locais + cloud</p>
+</div>
+
+<!-- ── CONFIRM modal (genérico) ── -->
+<div id="confirmOverlay" class="overlay hidden" onclick="cancelConfirmModal()"></div>
+<div id="confirmModal" class="modal confirm-modal hidden">
+  <p id="confirmTitle" class="confirm-title"></p>
+  <p id="confirmMsg"   class="confirm-msg"></p>
+  <div class="confirm-actions">
+    <button class="confirm-btn-cancel" onclick="cancelConfirmModal()">Cancelar</button>
+    <button id="confirmBtnOk" class="confirm-btn-ok" onclick="_runConfirmCallback()"></button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script src="js/app.js"></script>
+<script type="module" src="js/firebase-init.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
