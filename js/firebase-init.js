@@ -59,6 +59,7 @@ window.addEventListener('fbSyncStatus', e => {
 
 // ── Helpers de UI ──
 function _setLoggedUI(name, photoURL, email) {
+  // Settings panel
   document.getElementById('loginRow') ?.classList.add('hidden');
   document.getElementById('loggedRow')?.classList.remove('hidden');
 
@@ -74,11 +75,29 @@ function _setLoggedUI(name, photoURL, email) {
 
   const syncEl = document.getElementById('syncIndicator');
   if (syncEl) syncEl.className = 'sync-indicator is-synced';
+
+  // Cards na aba Hoje
+  document.getElementById('loginCard') ?.classList.add('hidden');
+  const loggedCard = document.getElementById('loggedCard');
+  if (loggedCard) loggedCard.classList.remove('hidden');
+
+  const loggedAvatar = document.getElementById('loggedAvatar');
+  if (loggedAvatar) {
+    loggedAvatar.src = photoURL || '';
+    loggedAvatar.style.display = photoURL ? '' : 'none';
+  }
+  const loggedName = document.getElementById('loggedName');
+  if (loggedName) loggedName.textContent = name || 'Usuário';
 }
 
 function _setLoggedOutUI() {
+  // Settings panel
   document.getElementById('loginRow') ?.classList.remove('hidden');
   document.getElementById('loggedRow')?.classList.add('hidden');
   const syncEl = document.getElementById('syncIndicator');
   if (syncEl) syncEl.className = 'sync-indicator';
+
+  // Cards na aba Hoje
+  document.getElementById('loggedCard')?.classList.add('hidden');
+  document.getElementById('loginCard') ?.classList.remove('hidden');
 }

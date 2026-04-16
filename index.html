@@ -73,6 +73,41 @@
 
     <!-- ── VIEW: HOJE ── -->
     <div id="view-today" class="view active">
+
+      <!-- Card de login — visível apenas quando deslogado -->
+      <div id="loginCard" class="login-card hidden">
+        <div class="login-card-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" class="login-card-icon">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <div class="login-card-text">
+            <span class="login-card-title">Entre para sincronizar</span>
+            <span class="login-card-sub">Seus dados ficam salvos na nuvem</span>
+          </div>
+        </div>
+        <button class="login-card-btn" onclick="fbLoginAction()">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Entrar com Google
+        </button>
+      </div>
+
+      <!-- Card de conta logada — visível quando logado -->
+      <div id="loggedCard" class="logged-card hidden">
+        <img id="loggedAvatar" class="logged-avatar" src="" alt="">
+        <div class="logged-card-text">
+          <span id="loggedName" class="logged-card-name"></span>
+          <span class="logged-card-sub">✓ Dados sincronizados</span>
+        </div>
+        <button class="logged-card-out" onclick="fbLogoutAction()">Sair</button>
+      </div>
+
       <div class="day-grid">
         <div class="day-col">
 
