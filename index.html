@@ -322,10 +322,24 @@
             <div class="bl-meta-line">
               <span class="bl-meta-label">Tipo</span>
               <div class="bl-chip-group">
-                <button class="bl-chip is-active" data-group="tipo" data-val="unica"      onclick="selectChip(this)">Única</button>
-                <button class="bl-chip"           data-group="tipo" data-val="recorrente" onclick="selectChip(this)">↻ Recorrente</button>
+                <button class="bl-chip is-active" data-group="tipo" data-val="unica"      onclick="selectTipoChip(this)">Única</button>
+                <button class="bl-chip"           data-group="tipo" data-val="recorrente" onclick="selectTipoChip(this)">↻ Recorrente</button>
               </div>
               <button class="add-btn" onclick="addBacklog()">+</button>
+            </div>
+
+            <!-- Linha 2B: Dias da semana — aparece apenas para ↻ Recorrente -->
+            <div class="bl-meta-line bl-days-row" id="backlogRecorrDaysRow" style="display:none">
+              <span class="bl-meta-label">Dias</span>
+              <div class="bl-chip-group bl-days-group">
+                <button class="bl-day-chip" data-dow="0" onclick="toggleDayChip(this)">DOM</button>
+                <button class="bl-day-chip" data-dow="1" onclick="toggleDayChip(this)">SEG</button>
+                <button class="bl-day-chip" data-dow="2" onclick="toggleDayChip(this)">TER</button>
+                <button class="bl-day-chip" data-dow="3" onclick="toggleDayChip(this)">QUA</button>
+                <button class="bl-day-chip" data-dow="4" onclick="toggleDayChip(this)">QUI</button>
+                <button class="bl-day-chip" data-dow="5" onclick="toggleDayChip(this)">SEX</button>
+                <button class="bl-day-chip" data-dow="6" onclick="toggleDayChip(this)">SÁB</button>
+              </div>
             </div>
 
           </div>

@@ -119,7 +119,8 @@ function defaultDay() {
     ],
     balance: { work: 8, personal: 8, sleep: 8 },
     captures: [],
-    status: null
+    status: null,
+    recorrentesInjetadas: []   // IDs de backlog já injetados neste dia
   };
 }
 
@@ -151,21 +152,24 @@ function applyMigrations(data) {
     m.tipo ? m : { tipo: 'manual', autoFonte: null, tarefaTexto: null, ...m }
   );
 
-  // Migra itens legados do backlog (string → objeto) + adiciona campo arquivado
+  // Migra itens legados do backlog (string → objeto) + adiciona campos ausentes
   data.backlog = data.backlog.map((item, idx) => {
     const base = typeof item === 'string'
       ? { id: Date.now() + idx, text: item, porte: 'pequena', tipo: 'unica' }
       : item;
-    return 'arquivado' in base ? base : { ...base, arquivado: false };
+    const withArquivado = 'arquivado' in base ? base : { ...base, arquivado: false };
+    // Garante campo dias (array de day-of-week 0=Dom…6=Sáb) em tarefas recorrentes
+    return 'dias' in withArquivado ? withArquivado : { ...withArquivado, dias: [] };
   });
 
   // Garante estrutura correta em dias antigos
   for (const key in data.days) {
     const d = data.days[key];
-    if (!Array.isArray(d.medium))   d.medium   = defaultDay().medium;
-    if (!Array.isArray(d.small))    d.small    = defaultDay().small;
-    if (!d.balance)                 d.balance  = { work: 8, personal: 8, sleep: 8 };
-    if (!Array.isArray(d.captures)) d.captures = [];
+    if (!Array.isArray(d.medium))              d.medium              = defaultDay().medium;
+    if (!Array.isArray(d.small))               d.small               = defaultDay().small;
+    if (!d.balance)                            d.balance             = { work: 8, personal: 8, sleep: 8 };
+    if (!Array.isArray(d.captures))            d.captures            = [];
+    if (!Array.isArray(d.recorrentesInjetadas)) d.recorrentesInjetadas = [];
   }
 
   return data;
@@ -262,10 +266,78 @@ function renderProgress() {
 }
 
 // ══════════════════════════════════════════════
+// RECORRENTES — INJEÇÃO AUTOMÁTICA
+// ══════════════════════════════════════════════
+
+/**
+ * Verifica quais tarefas recorrentes do backlog devem aparecer no dia `dateStr`
+ * (com base no dia da semana configurado) e as injeta caso ainda não estejam.
+ * A lista `day.recorrentesInjetadas` funciona como guard anti-duplicata:
+ * uma vez que o ID do backlog está lá, nunca é reinjetado naquele dia.
+ */
+function injectRecurringTasks(dateStr) {
+  const dow = parseLocal(dateStr).getDay(); // 0=Dom … 6=Sáb
+  const day = getDay(dateStr);
+  if (!Array.isArray(day.recorrentesInjetadas)) day.recorrentesInjetadas = [];
+
+  let changed = false;
+
+  (appData.backlog || []).forEach(item => {
+    if (typeof item !== 'object')        return;
+    if (item.tipo !== 'recorrente')      return;
+    if (item.arquivado)                  return;
+    if (!item.dias || !item.dias.length) return;
+    if (!item.dias.includes(dow))        return;
+    if (day.recorrentesInjetadas.includes(item.id)) return;
+
+    _injectTaskIntoDay(item, day);
+    day.recorrentesInjetadas.push(item.id);
+    changed = true;
+  });
+
+  if (changed) save();
+}
+
+/**
+ * Insere uma tarefa do backlog no dia usando a mesma lógica de roteamento
+ * por porte do sendBacklogToDay (grande → bigGoal → médio → captura, etc.)
+ */
+function _injectTaskIntoDay(task, day) {
+  if (task.porte === 'grande') {
+    if (!day.bigGoal) {
+      day.bigGoal = task.text;
+      day.bigDone = false;
+    } else {
+      const slot = day.medium.findIndex(t => !t.text);
+      if (slot !== -1) day.medium[slot] = { text: task.text, done: false };
+      else             day.captures.unshift(task.text);
+    }
+  } else if (task.porte === 'media') {
+    const slot = day.medium.findIndex(t => !t.text);
+    if (slot !== -1) {
+      day.medium[slot] = { text: task.text, done: false };
+    } else {
+      const sSlot = day.small.findIndex(t => !t.text);
+      if (sSlot !== -1) day.small[sSlot] = { text: task.text, done: false };
+      else              day.captures.unshift(task.text);
+    }
+  } else {
+    // pequena (default)
+    const slot = day.small.findIndex(t => !t.text);
+    if (slot !== -1) {
+      day.small[slot] = { text: task.text, done: false };
+    } else {
+      day.captures.unshift(task.text);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════
 // DAY VIEW (Hoje)
 // ══════════════════════════════════════════════
 
 function renderDayView() {
+  injectRecurringTasks(currentDate); // injeta recorrentes antes de renderizar
   const day = getDay(currentDate);
   renderBigGoal(day);
   renderTasks(day);
@@ -712,6 +784,9 @@ function renderBacklog() {
     const porteLabel = PORTE_LABELS[task.porte]  || task.porte;
     const tipoLabel  = TIPO_LABELS[task.tipo]     || task.tipo;
     const isRecorr   = task.tipo === 'recorrente';
+    const diasText   = isRecorr && task.dias && task.dias.length > 0
+      ? task.dias.map(d => DIAS_CURTO[d]).join(' · ')
+      : null;
 
     const item = document.createElement('div');
     item.className = 'bl-item';
@@ -721,6 +796,7 @@ function renderBacklog() {
         <div class="bl-item-badges">
           <span class="bl-badge bl-porte" style="color:${porteClr};border-color:${porteClr}">${porteLabel}</span>
           <span class="bl-badge ${isRecorr ? 'bl-recorrente' : 'bl-unica'}">${tipoLabel}</span>
+          ${diasText ? `<span class="bl-badge bl-dias">↻ ${diasText}</span>` : ''}
         </div>
       </div>
       <div class="bl-item-actions">
@@ -759,6 +835,9 @@ function renderBacklog() {
       const porteLabel = PORTE_LABELS[task.porte]  || task.porte;
       const tipoLabel  = TIPO_LABELS[task.tipo]     || task.tipo;
       const isRecorr   = task.tipo === 'recorrente';
+      const diasText   = isRecorr && task.dias && task.dias.length > 0
+        ? task.dias.map(d => DIAS_CURTO[d]).join(' · ')
+        : null;
 
       const item = document.createElement('div');
       item.className = 'bl-item is-archived';
@@ -768,6 +847,7 @@ function renderBacklog() {
           <div class="bl-item-badges">
             <span class="bl-badge bl-porte" style="color:${porteClr};border-color:${porteClr}">${porteLabel}</span>
             <span class="bl-badge ${isRecorr ? 'bl-recorrente' : 'bl-unica'}">${tipoLabel}</span>
+            ${diasText ? `<span class="bl-badge bl-dias">↻ ${diasText}</span>` : ''}
           </div>
         </div>
         <div class="bl-item-actions">
@@ -808,10 +888,37 @@ function selectChip(btn) {
   btn.classList.add('is-active');
 }
 
+/**
+ * Variante para o chip de Tipo no backlog:
+ * além de selecionar, mostra/oculta o seletor de dias da semana.
+ */
+function selectTipoChip(btn) {
+  selectChip(btn);
+  const isRecorr = btn.dataset.val === 'recorrente';
+  const row = document.getElementById('backlogRecorrDaysRow');
+  if (row) row.style.display = isRecorr ? '' : 'none';
+  // Se mudou para única, limpa a seleção de dias
+  if (!isRecorr) {
+    document.querySelectorAll('.bl-day-chip.is-active')
+      .forEach(c => c.classList.remove('is-active'));
+  }
+}
+
+/** Toggle multi-select dos chips de dia da semana */
+function toggleDayChip(btn) {
+  btn.classList.toggle('is-active');
+}
+
 /** Retorna o valor do chip ativo de um grupo */
 function getChipVal(group, fallback) {
   const el = document.querySelector(`.bl-chip[data-group="${group}"].is-active`);
   return el ? el.dataset.val : fallback;
+}
+
+/** Retorna array de day-of-week selecionados (0=Dom…6=Sáb) */
+function getDaysSelection() {
+  return Array.from(document.querySelectorAll('.bl-day-chip.is-active'))
+    .map(c => parseInt(c.dataset.dow, 10));
 }
 
 function addBacklog() {
@@ -819,17 +926,25 @@ function addBacklog() {
   const val   = input.value.trim();
   if (!val) return;
 
+  const tipo = getChipVal('tipo', 'unica');
+  const dias = tipo === 'recorrente' ? getDaysSelection() : [];
+
   const task = {
-    id:    Date.now(),
-    text:  val,
-    porte: getChipVal('porte', 'pequena'),
-    tipo:  getChipVal('tipo',  'unica'),
+    id:        Date.now(),
+    text:      val,
+    porte:     getChipVal('porte', 'pequena'),
+    tipo,
+    dias,
+    arquivado: false
   };
 
-  appData.backlog.unshift({ ...task, arquivado: false });
+  appData.backlog.unshift(task);
   save();
   input.value = '';
   input.focus(); // mantém foco para entradas rápidas
+  // Reseta seleção de dias após adicionar
+  document.querySelectorAll('.bl-day-chip.is-active')
+    .forEach(c => c.classList.remove('is-active'));
   renderBacklog();
   showToast('✓ Adicionado ao backlog', 'green');
 }
@@ -931,9 +1046,15 @@ function sendBacklogToDay(dateStr) {
 
   // ── Lógica única vs recorrente ──
   // Única: some do backlog após ser usada
-  // Recorrente: permanece no backlog
+  // Recorrente: permanece no backlog e registra no guard anti-duplicata do dia
   if (task.tipo !== 'recorrente') {
     appData.backlog.splice(_pendingBacklogIndex, 1);
+  } else if (task.id) {
+    // Marca como "já injetada" neste dia para o auto-injector não duplicar
+    if (!Array.isArray(day.recorrentesInjetadas)) day.recorrentesInjetadas = [];
+    if (!day.recorrentesInjetadas.includes(task.id)) {
+      day.recorrentesInjetadas.push(task.id);
+    }
   }
 
   save();
