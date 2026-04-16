@@ -3554,3 +3554,146 @@ button { cursor: pointer; }
     font-size: 12px;
   }
 }
+
+/* ══════════════════════════════════════════════
+   CHECKLIST DIÁRIO
+══════════════════════════════════════════════ */
+
+#card-checklist {
+  margin-top: 12px;
+}
+
+/* Badge contador ao lado do título */
+.cl-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green) 35%, transparent);
+  border-radius: 20px;
+  padding: 2px 8px;
+  letter-spacing: 0.5px;
+}
+
+/* Lista de itens */
+.cl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Item individual */
+.cl-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  transition: opacity var(--t), border-color var(--t);
+}
+.cl-item.cl-done {
+  opacity: 0.55;
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
+}
+
+/* Botão de check */
+.cl-check {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--border-hi);
+  background: transparent;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--t), border-color var(--t);
+}
+.cl-item.cl-done .cl-check {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  border-color: var(--green);
+}
+.cl-check:hover {
+  border-color: var(--green);
+}
+
+/* Input do nome */
+.cl-text {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 0;
+}
+.cl-item.cl-done .cl-text {
+  text-decoration: line-through;
+  color: var(--text3);
+}
+
+/* Botão deletar */
+.cl-del {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0.5;
+  transition: opacity var(--t), color var(--t);
+}
+.cl-del:hover {
+  opacity: 1;
+  color: var(--red, #e05);
+}
+
+/* Linha de adicionar */
+.cl-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.cl-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color var(--t);
+}
+.cl-input:focus {
+  border-color: var(--green);
+}
+.cl-add-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r);
+  border: 1px solid var(--green);
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  color: var(--green);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--t);
+}
+.cl-add-btn:hover {
+  background: color-mix(in srgb, var(--green) 28%, transparent);
+}

@@ -39,7 +39,7 @@ const STATUS_CYCLE = [null, 'normal', 'acao', 'compromisso', 'cansativo', 'relax
 
 let currentDate = todayString();   // "YYYY-MM-DD" do dia sendo visualizado
 let currentView = 'today';         // 'today' | 'plan' | 'backlog' | 'retro' | 'metas'
-let appData = { days: {}, backlog: [], metas: [] };
+let appData = { days: {}, backlog: [], metas: [], checklistItems: [] };
 
 // Estado do calendário (aba Planejar)
 let calYear  = new Date().getFullYear();
@@ -121,7 +121,8 @@ function defaultDay() {
     balanceSubs: { work: [], personal: [], sleep: [] }, // subdivisões internas do Equilíbrio
     captures: [],
     status: null,
-    recorrentesInjetadas: []   // IDs de backlog já injetados neste dia
+    recorrentesInjetadas: [],  // IDs de backlog já injetados neste dia
+    checklistDone: []          // IDs dos itens do checklist marcados hoje
   };
 }
 
@@ -175,7 +176,11 @@ function applyMigrations(data) {
     if (!Array.isArray(d.balanceSubs.work))    d.balanceSubs.work    = [];
     if (!Array.isArray(d.balanceSubs.personal)) d.balanceSubs.personal = [];
     if (!Array.isArray(d.balanceSubs.sleep))   d.balanceSubs.sleep   = [];
+    if (!Array.isArray(d.checklistDone))       d.checklistDone       = [];
   }
+
+  // Garante campo checklistItems no nível raiz
+  if (!Array.isArray(data.checklistItems)) data.checklistItems = [];
 
   return data;
 }
@@ -187,12 +192,13 @@ function load() {
       const parsed = JSON.parse(raw);
       if (typeof parsed !== 'object' || parsed === null) throw new Error('invalid');
       appData = applyMigrations({
-        days:    parsed.days    || {},
-        backlog: parsed.backlog || [],
-        metas:   parsed.metas   || []
+        days:          parsed.days          || {},
+        backlog:       parsed.backlog       || [],
+        metas:         parsed.metas         || [],
+        checklistItems: parsed.checklistItems || []
       });
     } catch(e) {
-      appData = { days: {}, backlog: [], metas: [] };
+      appData = { days: {}, backlog: [], metas: [], checklistItems: [] };
     }
   }
 }
@@ -348,6 +354,7 @@ function renderDayView() {
   renderTasks(day);
   renderBalance(day);
   renderCaptures(day);
+  renderChecklist(day);
   renderFechaDia();
 }
 
@@ -710,6 +717,86 @@ function removeCapture(index) {
   day.captures.splice(index, 1);
   save();
   renderCaptures(day);
+}
+
+// ── Checklist Diário ──
+function renderChecklist(day) {
+  const list  = document.getElementById('checklistList');
+  const badge = document.getElementById('clBadge');
+  if (!list) return;
+
+  const items = appData.checklistItems || [];
+  const done  = day.checklistDone || [];
+
+  // Atualiza badge
+  if (badge) badge.textContent = `${done.length}/${items.length}`;
+
+  list.innerHTML = '';
+
+  if (items.length === 0) {
+    list.innerHTML = '<p class="empty-hint">Adicione hábitos que quer checar todo dia</p>';
+    return;
+  }
+
+  items.forEach(item => {
+    const isDone = done.includes(item.id);
+    const row = document.createElement('div');
+    row.className = 'cl-item' + (isDone ? ' cl-done' : '');
+    row.innerHTML = `
+      <button class="cl-check" onclick="toggleChecklistDone(${item.id})" aria-label="marcar">
+        ${isDone ? '✓' : ''}
+      </button>
+      <input class="cl-text" type="text" value="${escHtml(item.text)}"
+        onblur="saveChecklistItemName(${item.id}, this)"
+        onkeydown="if(event.key==='Enter')this.blur()">
+      <button class="cl-del" onclick="removeChecklistItem(${item.id})" aria-label="remover">×</button>`;
+    list.appendChild(row);
+  });
+}
+
+function addChecklistItem() {
+  const input = document.getElementById('clInput');
+  const val   = input.value.trim();
+  if (!val) return;
+  if (!appData.checklistItems) appData.checklistItems = [];
+  appData.checklistItems.push({ id: Date.now(), text: val });
+  save();
+  input.value = '';
+  renderChecklist(getDay(currentDate));
+}
+
+function removeChecklistItem(id) {
+  if (!appData.checklistItems) return;
+  appData.checklistItems = appData.checklistItems.filter(i => i.id !== id);
+  // Remove dos checklistDone de todos os dias (limpeza)
+  for (const key in appData.days) {
+    const d = appData.days[key];
+    if (Array.isArray(d.checklistDone)) {
+      d.checklistDone = d.checklistDone.filter(doneId => doneId !== id);
+    }
+  }
+  save();
+  renderChecklist(getDay(currentDate));
+}
+
+function toggleChecklistDone(id) {
+  const day = getDay(currentDate);
+  if (!Array.isArray(day.checklistDone)) day.checklistDone = [];
+  const idx = day.checklistDone.indexOf(id);
+  if (idx === -1) {
+    day.checklistDone.push(id);
+  } else {
+    day.checklistDone.splice(idx, 1);
+  }
+  save();
+  renderChecklist(day);
+}
+
+function saveChecklistItemName(id, el) {
+  const val = el.value.trim();
+  if (!val) { el.value = (appData.checklistItems.find(i => i.id === id) || {}).text || ''; return; }
+  const item = (appData.checklistItems || []).find(i => i.id === id);
+  if (item) { item.text = val; save(); }
 }
 
 // ══════════════════════════════════════════════
@@ -2354,6 +2441,13 @@ function buildIASystemPrompt() {
     .filter(Boolean)
     .join('\n') || '  (sem histórico)';
 
+  // Snapshot do checklist diário
+  const clItems = appData.checklistItems || [];
+  const clDone  = todayDay.checklistDone || [];
+  const clSnap  = clItems.length === 0
+    ? '  (nenhum hábito cadastrado)'
+    : clItems.map(i => `  [${clDone.includes(i.id) ? 'X' : ' '}] ${i.text}`).join('\n');
+
   return `Você é a assistente de planejamento do Plannit, um planner pessoal diário.
 Sua função é ajudar o usuário a organizar tarefas, planejar a semana e tomar decisões sobre prioridades.
 Você é objetiva, prática e direta — sem frases motivacionais genéricas.
@@ -2370,6 +2464,9 @@ Dia atual (1-3-5):
 Backlog (tarefas pendentes):
 ${backlogSnap}
 
+Checklist diário de hoje:
+${clSnap}
+
 Histórico recente:
 ${histSnap}
 
@@ -2381,6 +2478,7 @@ ${histSnap}
 - STATUS DO DIA: Normal (verde), Ação & Foco (azul), Compromisso (vermelho), Cansativo (laranja), Relaxar (roxo), Neutro (amarelo)
 - PORTE: grande / media / pequena
 - TIPO: unica / recorrente
+- CHECKLIST DIÁRIO: hábitos fixos (ex: tomar banho, meditar) que se repetem todo dia, separados das tarefas 1-3-5
 
 == SEU COMPORTAMENTO ==
 1. Quando o usuário mencionar tarefas vagas ou grandes demais, PERGUNTE antes de propor plano.

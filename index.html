@@ -261,6 +261,20 @@
         </div><!-- /day-col direita -->
       </div><!-- /day-grid -->
 
+      <!-- ── CHECKLIST DIÁRIO ── -->
+      <section class="card" id="card-checklist">
+        <div class="card-header">
+          <span class="card-icon">✓</span>
+          <h2 class="card-title">CHECKLIST DIÁRIO</h2>
+          <span id="clBadge" class="cl-badge">0/0</span>
+        </div>
+        <div id="checklistList" class="cl-list"></div>
+        <div class="cl-add-row">
+          <input id="clInput" class="cl-input" type="text" placeholder="Novo hábito diário…" onkeydown="if(event.key==='Enter')addChecklistItem()">
+          <button class="cl-add-btn" onclick="addChecklistItem()">+</button>
+        </div>
+      </section>
+
       <!-- Fechar Dia — aparece quando há pendências -->
       <div id="fechaDiaSection" class="fechar-dia-section hidden">
         <button class="fechar-dia-btn" onclick="fecharDia()">
