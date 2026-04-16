@@ -192,7 +192,8 @@
               <button class="bal-btn" onclick="adjustBal('work',1)">+</button>
             </div>
             <div class="bal-track"><div id="workFill" class="bal-fill work-fill"></div></div>
-            <div id="balSubsArea-work"></div>
+            <!-- Trigger expand: fica na coluna estreita, só o botão -->
+            <div id="balExpandArea-work"></div>
           </div>
 
           <div class="bal-item">
@@ -209,7 +210,7 @@
               <button class="bal-btn" onclick="adjustBal('personal',1)">+</button>
             </div>
             <div class="bal-track"><div id="personalFill" class="bal-fill personal-fill"></div></div>
-            <div id="balSubsArea-personal"></div>
+            <div id="balExpandArea-personal"></div>
           </div>
 
           <div class="bal-item">
@@ -226,10 +227,16 @@
               <button class="bal-btn" onclick="adjustBal('sleep',1)">+</button>
             </div>
             <div class="bal-track"><div id="sleepFill" class="bal-fill sleep-fill"></div></div>
-            <div id="balSubsArea-sleep"></div>
+            <div id="balExpandArea-sleep"></div>
           </div>
 
         </div>
+
+        <!-- Painéis expandidos em largura total — fora do grid de 3 colunas -->
+        <div id="balSubsArea-work"></div>
+        <div id="balSubsArea-personal"></div>
+        <div id="balSubsArea-sleep"></div>
+
         <div class="bal-total-row">
           <span>Total</span>
           <span id="balTotal" class="bal-total">24h ✓</span>

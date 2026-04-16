@@ -3332,7 +3332,13 @@ button { cursor: pointer; }
    EQUILÍBRIO — SUBDIVISÕES INTERNAS
 ══════════════════════════════════════════════ */
 
-/* Botão de expandir/recolher */
+/*
+  Arquitetura de dois destinos:
+  1. balExpandArea-{type} → dentro do bal-item (coluna ~110px): só o botão trigger
+  2. balSubsArea-{type}   → fora do balance-grid (100% do card): o painel com itens
+*/
+
+/* ── Trigger (dentro da coluna estreita) ── */
 .bal-expand-btn {
   display: flex;
   align-items: center;
@@ -3344,55 +3350,82 @@ button { cursor: pointer; }
   cursor: pointer;
   font-family: inherit;
   color: var(--text3);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.02em;
   transition: var(--t);
   text-align: left;
+  overflow: hidden;        /* evita que o botão force largura da célula */
 }
-.bal-expand-btn:hover { color: var(--text2); }
+.bal-expand-btn:hover  { color: var(--text2); }
 .bal-expand-btn.is-open { color: var(--text2); }
-.bal-expand-btn.is-open .bal-expand-chevron {
-  transform: rotate(180deg);
-}
+.bal-expand-btn.is-open .bal-expand-chevron { transform: rotate(180deg); }
 
 .bal-expand-chevron {
-  width: 11px;
-  height: 11px;
+  width: 10px; height: 10px;
   flex-shrink: 0;
   transition: transform 0.22s ease;
 }
 .bal-expand-label {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Painel expansível */
-.bal-subs-panel {
-  padding: 4px 0 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+/* ── Painel (largura total do card, fora do grid) ── */
+#balSubsArea-work,
+#balSubsArea-personal,
+#balSubsArea-sleep {
+  /* quando vazio não ocupa espaço */
 }
 
-/* Cada linha de subdivisão */
+.bal-subs-panel {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Cabeçalho do painel: "Trabalho" + "Xh livres" */
+.bal-subs-panel-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.bal-subs-panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+.bal-subs-panel-rem {
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* ── Cada linha de subdivisão ── */
 .bal-sub-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  background: var(--surface2);
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   transition: border-color 0.15s;
+  min-width: 0;             /* não force largura fora do flex */
 }
-.bal-sub-item:focus-within {
-  border-color: var(--border-hi);
-}
+.bal-sub-item:focus-within { border-color: var(--border-hi); }
 
-/* Campo de nome */
+/* Campo de nome — ocupa todo espaço restante */
 .bal-sub-name {
   flex: 1;
   min-width: 0;
@@ -3400,28 +3433,27 @@ button { cursor: pointer; }
   border: none;
   color: var(--text1);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   padding: 0;
   outline: none;
 }
-.bal-sub-name::placeholder { color: var(--text3); font-weight: 400; }
+.bal-sub-name::placeholder { color: var(--text3); }
 
-/* Controles de horas */
+/* Controles −/h/+ fixos à direita */
 .bal-sub-ctrl {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
 }
 .bal-sub-btn {
-  width: 20px;
-  height: 20px;
+  width: 22px; height: 22px;
   border-radius: 50%;
   border: 1px solid var(--border-hi);
   background: var(--surface3);
   color: var(--text2);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -3431,30 +3463,25 @@ button { cursor: pointer; }
   transition: var(--t);
   padding: 0;
 }
-.bal-sub-btn:hover:not(:disabled) {
-  border-color: var(--text2);
-  color: var(--text1);
-}
+.bal-sub-btn:hover:not(:disabled) { border-color: var(--text2); color: var(--text1); }
 .bal-sub-btn:disabled { opacity: 0.25; cursor: default; }
 
 .bal-sub-h {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text1);
-  min-width: 24px;
+  min-width: 28px;
   text-align: center;
 }
 
-/* Botão remover */
+/* Botão × remover */
 .bal-sub-del {
-  width: 18px;
-  height: 18px;
+  width: 20px; height: 20px;
   border-radius: 50%;
   border: none;
   background: none;
   color: var(--text3);
-  font-size: 15px;
-  line-height: 1;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3466,13 +3493,13 @@ button { cursor: pointer; }
 }
 .bal-sub-del:hover { color: #ef4444; }
 
-/* Botão "Adicionar divisão" */
+/* Botão "+ Adicionar divisão" */
 .bal-add-sub-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 10px;
   background: none;
   border: 1px dashed var(--border-hi);
   border-radius: 10px;
@@ -3492,8 +3519,38 @@ button { cursor: pointer; }
 .bal-add-sub-btn.is-full {
   border-style: solid;
   border-color: var(--border);
-  color: var(--text3);
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: default;
 }
 .bal-add-sub-btn:disabled { cursor: default; }
+
+/* ══════════════════════════════════════════════
+   LOGIN CARD — FIX RESPONSIVO MOBILE
+══════════════════════════════════════════════ */
+
+/* Em telas estreitas (<= 480px) empilha texto e botão verticalmente */
+@media (max-width: 480px) {
+  .login-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px;
+  }
+  .login-card-left {
+    gap: 10px;
+  }
+  .login-card-title {
+    white-space: normal;
+    font-size: 13px;
+  }
+  .login-card-sub {
+    white-space: normal;
+    font-size: 11px;
+  }
+  .login-card-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 9px 16px;
+    font-size: 12px;
+  }
+}

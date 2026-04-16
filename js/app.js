@@ -560,28 +560,46 @@ function saveBalSubName(type, id, el) {
   save();
 }
 
-/** Reconstrói a área de subdivisões de um bloco específico */
+/**
+ * Reconstrói a área de subdivisões de um bloco.
+ * Separado em dois destinos:
+ *  - balExpandArea-{type} → dentro do bal-item (coluna estreita): só o botão trigger
+ *  - balSubsArea-{type}   → fora do balance-grid (largura total do card): o painel expandido
+ */
 function _renderBalSubs(day, type) {
-  const area = document.getElementById(`balSubsArea-${type}`);
-  if (!area) return;
+  const triggerArea = document.getElementById(`balExpandArea-${type}`);
+  const panelArea   = document.getElementById(`balSubsArea-${type}`);
+  if (!triggerArea || !panelArea) return;
 
   const subs      = day.balanceSubs?.[type] || [];
   const used      = _getSubsUsed(day, type);
   const remaining = day.balance[type] - used;
   const isOpen    = _balSubsOpen[type];
 
-  // Legenda do botão de expansão
+  const TYPE_NAME = { work: 'Trabalho', personal: 'Pessoal', sleep: 'Sono' };
+
+  // ── Trigger (botão expand — fica na coluna estreita) ──────────
   const labelText = subs.length === 0
     ? 'Dividir horas'
-    : `${used}h divididas · ${subs.length} ${subs.length === 1 ? 'divisão' : 'divisões'}`;
+    : `${used}h · ${subs.length} ${subs.length === 1 ? 'divisão' : 'divisões'}`;
 
-  // Botão "Adicionar divisão" — texto adaptativo
+  triggerArea.innerHTML = `
+    <button class="bal-expand-btn${isOpen ? ' is-open' : ''}" onclick="toggleBalSubs('${type}')">
+      <svg class="bal-expand-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="2,4 6,8 10,4"/>
+      </svg>
+      <span class="bal-expand-label">${labelText}</span>
+    </button>`;
+
+  // ── Painel (largura total fora do grid) ───────────────────────
+  if (!isOpen) { panelArea.innerHTML = ''; return; }
+
   const addFull  = remaining <= 0;
   const addLabel = addFull
     ? `Limite atingido (${day.balance[type]}h)`
-    : `+ Adicionar divisão${used > 0 ? ` · ${remaining}h livre${remaining !== 1 ? 's' : ''}` : ''}`;
+    : `+ Adicionar divisão · ${remaining}h livre${remaining !== 1 ? 's' : ''}`;
 
-  // Itens da lista
   const itemsHTML = subs.map(s => {
     const canInc = remaining > 0;
     const canDec = s.hours > 1;
@@ -600,15 +618,12 @@ function _renderBalSubs(day, type) {
       </div>`;
   }).join('');
 
-  area.innerHTML = `
-    <button class="bal-expand-btn${isOpen ? ' is-open' : ''}" onclick="toggleBalSubs('${type}')">
-      <svg class="bal-expand-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="2,4 6,8 10,4"/>
-      </svg>
-      <span class="bal-expand-label">${labelText}</span>
-    </button>
-    <div class="bal-subs-panel" style="display:${isOpen ? '' : 'none'}">
+  panelArea.innerHTML = `
+    <div class="bal-subs-panel">
+      <div class="bal-subs-panel-hdr">
+        <span class="bal-subs-panel-title">${TYPE_NAME[type]}</span>
+        <span class="bal-subs-panel-rem">${remaining}h livre${remaining !== 1 ? 's' : ''}</span>
+      </div>
       ${itemsHTML}
       <button class="bal-add-sub-btn${addFull ? ' is-full' : ''}"
               onclick="addBalSub('${type}')"${addFull ? ' disabled' : ''}>
