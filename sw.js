@@ -3,7 +3,7 @@
    Permite que o app funcione offline
    ================================================ */
 
-const CACHE = 'plannit-v23';
+const CACHE = 'plannit-v24';
 const ASSETS = [
   '.',
   './index.html',

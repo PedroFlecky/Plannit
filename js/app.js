@@ -118,6 +118,7 @@ function defaultDay() {
       { text: '', done: false }
     ],
     balance: { work: 8, personal: 8, sleep: 8 },
+    balanceSubs: { work: [], personal: [], sleep: [] }, // subdivisões internas do Equilíbrio
     captures: [],
     status: null,
     recorrentesInjetadas: []   // IDs de backlog já injetados neste dia
@@ -170,6 +171,10 @@ function applyMigrations(data) {
     if (!d.balance)                            d.balance             = { work: 8, personal: 8, sleep: 8 };
     if (!Array.isArray(d.captures))            d.captures            = [];
     if (!Array.isArray(d.recorrentesInjetadas)) d.recorrentesInjetadas = [];
+    if (!d.balanceSubs)                        d.balanceSubs         = { work: [], personal: [], sleep: [] };
+    if (!Array.isArray(d.balanceSubs.work))    d.balanceSubs.work    = [];
+    if (!Array.isArray(d.balanceSubs.personal)) d.balanceSubs.personal = [];
+    if (!Array.isArray(d.balanceSubs.sleep))   d.balanceSubs.sleep   = [];
   }
 
   return data;
@@ -495,6 +500,123 @@ function toggleTask(type, index) {
   renderHeader();
 }
 
+// ── Balance Subdivisions ──────────────────────
+
+// Estado de abertura de cada painel (memória por sessão)
+const _balSubsOpen = { work: false, personal: false, sleep: false };
+
+/** Soma as horas das subdivisões de um bloco */
+function _getSubsUsed(day, type) {
+  return (day.balanceSubs?.[type] || []).reduce((s, x) => s + x.hours, 0);
+}
+
+/** Abre/fecha o painel de subdivisões */
+function toggleBalSubs(type) {
+  _balSubsOpen[type] = !_balSubsOpen[type];
+  _renderBalSubs(getDay(currentDate), type);
+}
+
+/** Adiciona nova subdivisão (só se houver horas disponíveis) */
+function addBalSub(type) {
+  const day = getDay(currentDate);
+  if (!day.balanceSubs) day.balanceSubs = { work: [], personal: [], sleep: [] };
+  const remaining = day.balance[type] - _getSubsUsed(day, type);
+  if (remaining <= 0) return;
+  day.balanceSubs[type].push({ id: Date.now(), name: '', hours: Math.min(1, remaining) });
+  _balSubsOpen[type] = true;
+  save();
+  _renderBalSubs(day, type);
+}
+
+/** Remove uma subdivisão pelo ID */
+function removeBalSub(type, id) {
+  const day = getDay(currentDate);
+  day.balanceSubs[type] = (day.balanceSubs[type] || []).filter(s => s.id !== id);
+  save();
+  _renderBalSubs(day, type);
+}
+
+/** Ajusta as horas de uma subdivisão, respeitando o limite do bloco */
+function adjustBalSub(type, id, delta) {
+  const day  = getDay(currentDate);
+  const subs = day.balanceSubs?.[type] || [];
+  const sub  = subs.find(s => s.id === id);
+  if (!sub) return;
+  const newH = sub.hours + delta;
+  if (newH < 1) return;                                             // mínimo 1h
+  const otherUsed = subs.filter(s => s.id !== id).reduce((s, x) => s + x.hours, 0);
+  if (newH > day.balance[type] - otherUsed) return;                // não ultrapassa bloco
+  sub.hours = newH;
+  save();
+  _renderBalSubs(day, type);
+}
+
+/** Salva o nome de uma subdivisão ao perder o foco */
+function saveBalSubName(type, id, el) {
+  const day = getDay(currentDate);
+  const sub = (day.balanceSubs?.[type] || []).find(s => s.id === id);
+  if (!sub) return;
+  sub.name = el.value;
+  save();
+}
+
+/** Reconstrói a área de subdivisões de um bloco específico */
+function _renderBalSubs(day, type) {
+  const area = document.getElementById(`balSubsArea-${type}`);
+  if (!area) return;
+
+  const subs      = day.balanceSubs?.[type] || [];
+  const used      = _getSubsUsed(day, type);
+  const remaining = day.balance[type] - used;
+  const isOpen    = _balSubsOpen[type];
+
+  // Legenda do botão de expansão
+  const labelText = subs.length === 0
+    ? 'Dividir horas'
+    : `${used}h divididas · ${subs.length} ${subs.length === 1 ? 'divisão' : 'divisões'}`;
+
+  // Botão "Adicionar divisão" — texto adaptativo
+  const addFull  = remaining <= 0;
+  const addLabel = addFull
+    ? `Limite atingido (${day.balance[type]}h)`
+    : `+ Adicionar divisão${used > 0 ? ` · ${remaining}h livre${remaining !== 1 ? 's' : ''}` : ''}`;
+
+  // Itens da lista
+  const itemsHTML = subs.map(s => {
+    const canInc = remaining > 0;
+    const canDec = s.hours > 1;
+    return `
+      <div class="bal-sub-item">
+        <input class="bal-sub-name" value="${escHtml(s.name)}"
+               placeholder="Nome da atividade..."
+               onblur="saveBalSubName('${type}', ${s.id}, this)"
+               onkeydown="if(event.key==='Enter')this.blur()">
+        <div class="bal-sub-ctrl">
+          <button class="bal-sub-btn" onclick="adjustBalSub('${type}',${s.id},-1)"${canDec ? '' : ' disabled'}>−</button>
+          <span class="bal-sub-h">${s.hours}h</span>
+          <button class="bal-sub-btn" onclick="adjustBalSub('${type}',${s.id},1)"${canInc ? '' : ' disabled'}>+</button>
+        </div>
+        <button class="bal-sub-del" onclick="removeBalSub('${type}',${s.id})">×</button>
+      </div>`;
+  }).join('');
+
+  area.innerHTML = `
+    <button class="bal-expand-btn${isOpen ? ' is-open' : ''}" onclick="toggleBalSubs('${type}')">
+      <svg class="bal-expand-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="2,4 6,8 10,4"/>
+      </svg>
+      <span class="bal-expand-label">${labelText}</span>
+    </button>
+    <div class="bal-subs-panel" style="display:${isOpen ? '' : 'none'}">
+      ${itemsHTML}
+      <button class="bal-add-sub-btn${addFull ? ' is-full' : ''}"
+              onclick="addBalSub('${type}')"${addFull ? ' disabled' : ''}>
+        ${addLabel}
+      </button>
+    </div>`;
+}
+
 // ── Balance ──
 function renderBalance(day) {
   const b = day.balance;
@@ -519,12 +641,21 @@ function renderBalance(day) {
     totalEl.textContent = `${total}h (faltam ${24 - total}h)`;
     totalEl.className   = 'bal-total';
   }
+
+  // Atualiza os painéis de subdivisão dos três blocos
+  ['work', 'personal', 'sleep'].forEach(type => _renderBalSubs(day, type));
 }
 
 function adjustBal(type, delta) {
   const day = getDay(currentDate);
   const val = day.balance[type] + delta;
   if (val < 0 || val > 24) return;
+  // Não deixa o total do bloco cair abaixo da soma das subdivisões
+  const subsUsed = _getSubsUsed(day, type);
+  if (val < subsUsed) {
+    showToast(`Remove divisões antes de reduzir (${subsUsed}h em uso)`);
+    return;
+  }
   day.balance[type] = val;
   save();
   renderBalance(day);

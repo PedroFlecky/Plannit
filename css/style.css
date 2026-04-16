@@ -3327,3 +3327,173 @@ button { cursor: pointer; }
   font-weight: 700;
   letter-spacing: 0.05em;
 }
+
+/* ══════════════════════════════════════════════
+   EQUILÍBRIO — SUBDIVISÕES INTERNAS
+══════════════════════════════════════════════ */
+
+/* Botão de expandir/recolher */
+.bal-expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 7px 0 2px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: var(--t);
+  text-align: left;
+}
+.bal-expand-btn:hover { color: var(--text2); }
+.bal-expand-btn.is-open { color: var(--text2); }
+.bal-expand-btn.is-open .bal-expand-chevron {
+  transform: rotate(180deg);
+}
+
+.bal-expand-chevron {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
+}
+.bal-expand-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Painel expansível */
+.bal-subs-panel {
+  padding: 4px 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Cada linha de subdivisão */
+.bal-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.15s;
+}
+.bal-sub-item:focus-within {
+  border-color: var(--border-hi);
+}
+
+/* Campo de nome */
+.bal-sub-name {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--text1);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0;
+  outline: none;
+}
+.bal-sub-name::placeholder { color: var(--text3); font-weight: 400; }
+
+/* Controles de horas */
+.bal-sub-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.bal-sub-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-hi);
+  background: var(--surface3);
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: var(--t);
+  padding: 0;
+}
+.bal-sub-btn:hover:not(:disabled) {
+  border-color: var(--text2);
+  color: var(--text1);
+}
+.bal-sub-btn:disabled { opacity: 0.25; cursor: default; }
+
+.bal-sub-h {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text1);
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Botão remover */
+.bal-sub-del {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--text3);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: color 0.15s;
+  padding: 0;
+  flex-shrink: 0;
+}
+.bal-sub-del:hover { color: #ef4444; }
+
+/* Botão "Adicionar divisão" */
+.bal-add-sub-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: 1px dashed var(--border-hi);
+  border-radius: 10px;
+  color: var(--text3);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--t);
+  letter-spacing: 0.01em;
+}
+.bal-add-sub-btn:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+  border-style: solid;
+}
+.bal-add-sub-btn.is-full {
+  border-style: solid;
+  border-color: var(--border);
+  color: var(--text3);
+  opacity: 0.55;
+  cursor: default;
+}
+.bal-add-sub-btn:disabled { cursor: default; }
