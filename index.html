@@ -112,7 +112,7 @@
         <div class="day-col">
 
       <!-- 01 · Foco do Dia -->
-      <section class="card">
+      <section class="card" id="card-focus">
         <div class="card-header">
           <span class="card-num">01</span>
           <span class="card-title">FOCO DO DIA</span>
@@ -142,7 +142,7 @@
       </button>
 
       <!-- 02 · Objetivos 1·3·5 -->
-      <section class="card">
+      <section class="card" id="card-tasks">
         <div class="card-header">
           <span class="card-num">02</span>
           <span class="card-title">OBJETIVOS DO DIA</span>
@@ -170,7 +170,7 @@
         <div class="day-col">
 
       <!-- 03 · Equilíbrio 8·8·8 -->
-      <section class="card">
+      <section class="card" id="card-balance">
         <div class="card-header">
           <span class="card-num">03</span>
           <span class="card-title">EQUILÍBRIO</span>
@@ -234,7 +234,7 @@
       </section>
 
       <!-- 04 · Captura Rápida -->
-      <section class="card">
+      <section class="card" id="card-capture">
         <div class="card-header">
           <span class="card-num">04</span>
           <span class="card-title">CAPTURA RÁPIDA</span>
@@ -647,6 +647,20 @@
   <div class="settings-divider"></div>
 
   <div class="settings-section">
+    <p class="settings-section-title">AJUDA</p>
+
+    <button class="settings-btn" onclick="closeSettings(); tourStart(true)">
+      <span class="settings-btn-icon">◉</span>
+      <div class="settings-btn-body">
+        <span class="settings-btn-label">Refazer tour</span>
+        <span class="settings-btn-sub">Veja o tutorial guiado do Plannit novamente</span>
+      </div>
+    </button>
+  </div>
+
+  <div class="settings-divider"></div>
+
+  <div class="settings-section">
     <p class="settings-section-title">PERIGO</p>
 
     <button class="settings-btn is-danger" onclick="confirmResetApp()">
@@ -669,6 +683,23 @@
   <div class="confirm-actions">
     <button class="confirm-btn-cancel" onclick="cancelConfirmModal()">Cancelar</button>
     <button id="confirmBtnOk" class="confirm-btn-ok" onclick="_runConfirmCallback()"></button>
+  </div>
+</div>
+
+<!-- ── TOUR ONBOARDING ── -->
+<div id="tourOverlay" class="tour-overlay hidden"></div>
+<div id="tourSpotlight" class="tour-spotlight hidden"></div>
+<div id="tourPopup" class="tour-popup hidden">
+  <div class="tour-popup-header">
+    <span class="tour-step-count" id="tourStepCount"></span>
+    <button class="tour-skip-btn" onclick="tourSkip()">Pular tour</button>
+  </div>
+  <h3 class="tour-popup-title" id="tourPopupTitle"></h3>
+  <p class="tour-popup-text" id="tourPopupText"></p>
+  <div class="tour-popup-footer">
+    <button class="tour-btn tour-btn-prev" id="tourPrevBtn" onclick="tourPrev()">← Anterior</button>
+    <div class="tour-dots" id="tourDots"></div>
+    <button class="tour-btn tour-btn-next" id="tourNextBtn" onclick="tourNext()">Próximo →</button>
   </div>
 </div>
 

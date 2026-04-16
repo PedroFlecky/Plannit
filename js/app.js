@@ -2445,6 +2445,268 @@ function initIAView() {
 }
 
 // ══════════════════════════════════════════════
+// TOUR ONBOARDING
+// ══════════════════════════════════════════════
+
+const TOUR_STEPS = [
+  {
+    target: null,
+    title: 'Bem-vindo ao Plannit ✦',
+    text: 'Este tour rápido vai te mostrar os principais recursos do app. Use os botões abaixo para navegar entre as etapas.',
+    position: 'center',
+    view: null
+  },
+  {
+    target: '#card-focus',
+    title: 'Foco do Dia',
+    text: 'Defina uma grande meta para o dia — o seu objetivo mais importante. Marque como concluída ao final.',
+    position: 'bottom',
+    view: 'today'
+  },
+  {
+    target: '#card-tasks',
+    title: 'Objetivos 1·3·5',
+    text: 'Organize seu dia com até 1 tarefa grande, 3 médias e 5 pequenas. O método 1·3·5 evita sobrecarga e mantém o foco.',
+    position: 'bottom',
+    view: 'today'
+  },
+  {
+    target: '#card-balance',
+    title: 'Equilíbrio 8·8·8',
+    text: 'Gerencie as 24h do dia: 8h de trabalho, 8h pessoal e 8h de sono. Ajuste conforme sua rotina.',
+    position: 'top',
+    view: 'today'
+  },
+  {
+    target: '#card-capture',
+    title: 'Captura Rápida',
+    text: 'Anote ideias, insights e lembretes instantaneamente. Depois você os move para o Backlog ou o dia certo.',
+    position: 'top',
+    view: 'today'
+  },
+  {
+    target: '#statusWrap',
+    title: 'Status do Dia',
+    text: 'Classifique como está seu dia: Ação & Foco, Compromisso, Relaxar... Isso alimenta o histórico e as metas automáticas.',
+    position: 'bottom',
+    view: 'today'
+  },
+  {
+    target: '#tab-plan',
+    title: 'Planejar',
+    text: 'Visualize o calendário e distribua tarefas entre os dias da semana. Clique em qualquer dia para detalhar.',
+    position: 'top',
+    view: null
+  },
+  {
+    target: '#tab-backlog',
+    title: 'Backlog',
+    text: 'Seu repositório de tarefas pendentes. Adicione, organize por porte e tipo, e mova para o dia certo quando quiser.',
+    position: 'top',
+    view: null
+  },
+  {
+    target: '#tab-retro',
+    title: 'Histórico',
+    text: 'Veja sua retrospectiva: dias fechados, streak de produtividade e padrões ao longo do tempo.',
+    position: 'top',
+    view: null
+  },
+  {
+    target: '#tab-metas',
+    title: 'Metas',
+    text: 'Crie metas semanais ou mensais — manuais ou automáticas (contam tarefas concluídas automaticamente).',
+    position: 'top',
+    view: null
+  },
+  {
+    target: '#tab-ia',
+    title: 'Assistente IA ✦',
+    text: 'Seu co-piloto de planejamento. Descreva sua semana, peça sugestões ou organize seu backlog com linguagem natural.',
+    position: 'top',
+    view: null
+  },
+  {
+    target: null,
+    title: 'Tudo pronto! 🎯',
+    text: 'Você conhece o Plannit. Comece definindo seu Foco do Dia e boa execução! Você pode rever o tour a qualquer momento em Configurações.',
+    position: 'center',
+    view: null
+  }
+];
+
+let _tourStep = 0;
+let _tourActive = false;
+let _tourPrevTarget = null;
+
+function tourStart(force = false) {
+  if (!force && localStorage.getItem('plannit_tour_done') === '1') return;
+  _tourStep = 0;
+  _tourActive = true;
+  _renderTourStep();
+}
+
+function tourNext() {
+  if (!_tourActive) return;
+  if (_tourStep >= TOUR_STEPS.length - 1) {
+    tourEnd();
+    return;
+  }
+  _tourStep++;
+  _renderTourStep();
+}
+
+function tourPrev() {
+  if (!_tourActive || _tourStep <= 0) return;
+  _tourStep--;
+  _renderTourStep();
+}
+
+function tourSkip() {
+  tourEnd();
+}
+
+function tourEnd() {
+  _tourActive = false;
+  localStorage.setItem('plannit_tour_done', '1');
+
+  // Remove elevação do target anterior
+  if (_tourPrevTarget) {
+    _tourPrevTarget.classList.remove('tour-target-elevated');
+    _tourPrevTarget = null;
+  }
+
+  // Esconde todos os elementos do tour
+  document.getElementById('tourOverlay').classList.add('hidden');
+  document.getElementById('tourSpotlight').classList.add('hidden');
+  document.getElementById('tourPopup').classList.add('hidden');
+}
+
+function _renderTourStep() {
+  const step = TOUR_STEPS[_tourStep];
+
+  // Navega para a view correta se necessário
+  if (step.view && step.view !== currentView) {
+    switchView(step.view);
+  }
+
+  // Remove elevação do target anterior
+  if (_tourPrevTarget) {
+    _tourPrevTarget.classList.remove('tour-target-elevated');
+    _tourPrevTarget = null;
+  }
+
+  const overlay   = document.getElementById('tourOverlay');
+  const spotlight = document.getElementById('tourSpotlight');
+  const popup     = document.getElementById('tourPopup');
+
+  // Atualiza textos
+  document.getElementById('tourPopupTitle').textContent = step.title;
+  document.getElementById('tourPopupText').textContent  = step.text;
+  document.getElementById('tourStepCount').textContent  =
+    `${_tourStep + 1} de ${TOUR_STEPS.length}`;
+
+  // Dots de progresso
+  const dotsEl = document.getElementById('tourDots');
+  dotsEl.innerHTML = '';
+  TOUR_STEPS.forEach((_, i) => {
+    const d = document.createElement('span');
+    d.className = 'tour-dot' + (i === _tourStep ? ' is-active' : '');
+    dotsEl.appendChild(d);
+  });
+
+  // Botões
+  const prevBtn = document.getElementById('tourPrevBtn');
+  const nextBtn = document.getElementById('tourNextBtn');
+  prevBtn.disabled = (_tourStep === 0);
+  const isLast = (_tourStep === TOUR_STEPS.length - 1);
+  nextBtn.textContent = isLast ? 'Concluir ✓' : 'Próximo →';
+  nextBtn.className   = 'tour-btn tour-btn-next' + (isLast ? ' is-finish' : '');
+
+  // Mostra overlay
+  overlay.classList.remove('hidden');
+  popup.classList.remove('hidden');
+
+  if (!step.target) {
+    // Passo centralizado — sem spotlight
+    spotlight.classList.add('hidden');
+    _positionPopupCenter(popup);
+    return;
+  }
+
+  // Busca o elemento alvo (com pequeno delay para views recém-abertas renderizarem)
+  setTimeout(() => {
+    const el = document.querySelector(step.target);
+    if (!el) {
+      spotlight.classList.add('hidden');
+      _positionPopupCenter(popup);
+      return;
+    }
+
+    // Eleva o elemento acima do overlay
+    el.classList.add('tour-target-elevated');
+    _tourPrevTarget = el;
+
+    // Posiciona spotlight
+    _positionSpotlight(spotlight, el);
+    spotlight.classList.remove('hidden');
+
+    // Posiciona popup
+    _positionPopup(popup, el, step.position);
+  }, step.view ? 120 : 0);
+}
+
+function _positionSpotlight(spotlight, el) {
+  const PAD = 8;
+  const r   = el.getBoundingClientRect();
+  spotlight.style.top    = (r.top  - PAD) + 'px';
+  spotlight.style.left   = (r.left - PAD) + 'px';
+  spotlight.style.width  = (r.width  + PAD * 2) + 'px';
+  spotlight.style.height = (r.height + PAD * 2) + 'px';
+}
+
+function _positionPopup(popup, el, position) {
+  const GAP     = 16;
+  const PAD     = 16;
+  const r       = el.getBoundingClientRect();
+  const pw      = popup.offsetWidth  || 340;
+  const ph      = popup.offsetHeight || 200;
+  const vw      = window.innerWidth;
+  const vh      = window.innerHeight;
+
+  let top, left;
+
+  if (position === 'bottom') {
+    top  = r.bottom + GAP;
+    left = r.left + r.width / 2 - pw / 2;
+    // Se não cabe embaixo, coloca em cima
+    if (top + ph > vh - PAD) top = r.top - ph - GAP;
+  } else {
+    top  = r.top - ph - GAP;
+    left = r.left + r.width / 2 - pw / 2;
+    // Se não cabe em cima, coloca embaixo
+    if (top < PAD) top = r.bottom + GAP;
+  }
+
+  // Clamp horizontal
+  left = Math.max(PAD, Math.min(left, vw - pw - PAD));
+  // Clamp vertical
+  top  = Math.max(PAD, Math.min(top, vh - ph - PAD));
+
+  popup.style.top  = top  + 'px';
+  popup.style.left = left + 'px';
+}
+
+function _positionPopupCenter(popup) {
+  const pw = popup.offsetWidth  || 340;
+  const ph = popup.offsetHeight || 200;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  popup.style.top  = ((vh - ph) / 2) + 'px';
+  popup.style.left = ((vw - pw) / 2) + 'px';
+}
+
+// ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
 
@@ -2453,6 +2715,8 @@ function init() {
   // Garante dia de hoje no data
   getDay(todayString());
   render();
+  // Tour na primeira visita (delay para o render terminar)
+  setTimeout(() => tourStart(false), 600);
 }
 
 // Inicia quando o DOM estiver pronto
