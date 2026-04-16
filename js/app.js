@@ -1086,9 +1086,14 @@ function shuffle(arr) {
  * — Únicos saem do backlog; recorrentes permanecem
  */
 function montarDia() {
+  // 0. Injeta primeiro as tarefas recorrentes configuradas para hoje
+  //    (preenchem slots com prioridade antes do backlog aleatório)
+  injectRecurringTasks(currentDate);
+
   const day = getDay(currentDate);
 
   // 1. Coleta textos já presentes no dia para evitar duplicatas
+  //    (inclui as recorrentes que acabaram de entrar)
   const usedTexts = new Set();
   if (day.bigGoal) usedTexts.add(day.bigGoal.trim().toLowerCase());
   day.medium.forEach(t => { if (t.text) usedTexts.add(t.text.trim().toLowerCase()); });
