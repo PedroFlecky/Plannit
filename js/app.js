@@ -1033,10 +1033,16 @@ function renderBacklog() {
         </div>
       </div>
       <div class="bl-item-actions">
+        <button class="list-item-edit"    title="Editar" onclick="openBacklogEdit(${i})">✎</button>
         <button class="list-item-archive" title="Arquivar" onclick="archiveBacklog(${i})">↓</button>
         <button class="list-item-send"    title="Enviar para um dia" onclick="openDayPicker(${i})">↗</button>
         <button class="list-item-del"     onclick="removeBacklog(${i})">×</button>
       </div>`;
+    // Se este card está em modo edição, adiciona o painel inline
+    if (_blEditOpenIndex === i) {
+      item.classList.add('bl-item--editing');
+      item.innerHTML += _renderBacklogEditPanel(task);
+    }
     list.appendChild(item);
   });
 
@@ -1092,6 +1098,12 @@ function renderBacklog() {
 
     archSection.appendChild(archivedEl);
     list.appendChild(archSection);
+  }
+
+  // Foca o input de edição se um painel foi aberto
+  if (_blEditOpenIndex !== null) {
+    const inp = document.getElementById('blEditText');
+    if (inp) { inp.focus(); inp.select(); }
   }
 }
 
@@ -1187,6 +1199,125 @@ function removeBacklog(index) {
   save();
   renderBacklog();
   showToast('× Tarefa removida');
+}
+
+// ══════════════════════════════════════════════
+// EDIÇÃO INLINE DE CARD DO BACKLOG
+// ══════════════════════════════════════════════
+
+let _blEditOpenIndex = null; // índice do card atualmente aberto para edição
+
+function openBacklogEdit(index) {
+  // Se clicou no mesmo que já está aberto, fecha
+  if (_blEditOpenIndex === index) {
+    _blEditOpenIndex = null;
+    renderBacklog();
+    return;
+  }
+  _blEditOpenIndex = index;
+  renderBacklog(); // re-renderiza para injetar o painel no card correto
+}
+
+function closeBacklogEdit() {
+  _blEditOpenIndex = null;
+  renderBacklog();
+}
+
+function saveBacklogEdit(index) {
+  const task = appData.backlog[index];
+  if (!task) return;
+
+  const textEl  = document.getElementById('blEditText');
+  const newText = textEl ? textEl.value.trim() : '';
+  if (!newText) { showToast('Nome não pode ficar vazio'); return; }
+
+  // Porte
+  const porteChip = document.querySelector('#blEditPorteRow .bl-edit-chip.is-active');
+  const newPorte  = porteChip ? porteChip.dataset.val : (task.porte || 'pequena');
+
+  // Tipo
+  const tipoChip = document.querySelector('#blEditTipoRow .bl-edit-chip.is-active');
+  const newTipo  = tipoChip ? tipoChip.dataset.val : (task.tipo || 'unica');
+
+  // Dias
+  let newDias = [];
+  if (newTipo === 'recorrente') {
+    newDias = Array.from(document.querySelectorAll('#blEditDaysRow .bl-edit-day.is-active'))
+      .map(c => parseInt(c.dataset.dow, 10));
+  }
+
+  task.text  = newText;
+  task.porte = newPorte;
+  task.tipo  = newTipo;
+  task.dias  = newDias;
+  if (!task.id) task.id = Date.now();
+
+  save();
+  _blEditOpenIndex = null;
+  renderBacklog();
+  showToast('✓ Tarefa atualizada');
+}
+
+function _toggleBlEditDay(btn) {
+  btn.classList.toggle('is-active');
+}
+
+function _toggleBlEditTipo(btn) {
+  document.querySelectorAll('#blEditTipoRow .bl-edit-chip').forEach(c => c.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  const isRecorr = btn.dataset.val === 'recorrente';
+  const daysRow  = document.getElementById('blEditDaysRow');
+  if (daysRow) daysRow.style.display = isRecorr ? '' : 'none';
+}
+
+function _toggleBlEditPorte(btn) {
+  document.querySelectorAll('#blEditPorteRow .bl-edit-chip').forEach(c => c.classList.remove('is-active'));
+  btn.classList.add('is-active');
+}
+
+/** Injeta o painel de edição inline abaixo de um bl-item */
+function _renderBacklogEditPanel(task) {
+  const isRecorr = task.tipo === 'recorrente';
+  const DIAS_FULL = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+
+  const daysHTML = DIAS_FULL.map((d, dow) => {
+    const active = isRecorr && Array.isArray(task.dias) && task.dias.includes(dow) ? 'is-active' : '';
+    return `<button class="bl-edit-day ${active}" data-dow="${dow}" onclick="_toggleBlEditDay(this)">${d}</button>`;
+  }).join('');
+
+  return `
+  <div class="bl-edit-panel" id="blEditPanel">
+    <div class="bl-edit-row">
+      <input id="blEditText" class="bl-edit-input" type="text" value="${escHtml(task.text)}"
+        onkeydown="if(event.key==='Escape')closeBacklogEdit()">
+    </div>
+    <div class="bl-edit-row bl-edit-row--chips">
+      <span class="bl-edit-label">Porte</span>
+      <div id="blEditPorteRow" class="bl-edit-chips">
+        ${['pequena','media','grande'].map(p =>
+          `<button class="bl-edit-chip ${task.porte===p?'is-active':''}" data-val="${p}"
+            onclick="_toggleBlEditPorte(this)">${PORTE_LABELS[p]||p}</button>`
+        ).join('')}
+      </div>
+    </div>
+    <div class="bl-edit-row bl-edit-row--chips">
+      <span class="bl-edit-label">Tipo</span>
+      <div id="blEditTipoRow" class="bl-edit-chips">
+        ${['unica','recorrente'].map(t =>
+          `<button class="bl-edit-chip ${task.tipo===t?'is-active':''}" data-val="${t}"
+            onclick="_toggleBlEditTipo(this)">${TIPO_LABELS[t]||t}</button>`
+        ).join('')}
+      </div>
+    </div>
+    <div class="bl-edit-row bl-edit-row--days" id="blEditDaysRow" style="display:${isRecorr?'':'none'}">
+      <span class="bl-edit-label">Dias</span>
+      <div class="bl-edit-days">${daysHTML}</div>
+    </div>
+    <div class="bl-edit-row bl-edit-row--actions">
+      <button class="bl-edit-save" onclick="saveBacklogEdit(${appData.backlog.indexOf(task)})">Salvar</button>
+      <button class="bl-edit-cancel" onclick="closeBacklogEdit()">Cancelar</button>
+    </div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════════
@@ -2490,11 +2621,22 @@ ${histSnap}
 {
   "type": "add_to_backlog",
   "tasks": [
-    {"text": "Nome da tarefa", "porte": "grande|media|pequena", "tipo": "unica|recorrente"},
+    {"text": "Nome da tarefa", "porte": "grande|media|pequena", "tipo": "unica|recorrente", "dias": []},
     ...
   ]
 }
 \`\`\`
+
+IMPORTANTE sobre o campo "dias":
+- Para tarefas únicas: "dias": []
+- Para tarefas recorrentes: "dias" deve conter os números dos dias da semana em que a tarefa ocorre
+- Mapeamento OBRIGATÓRIO: 0=Domingo, 1=Segunda, 2=Terça, 3=Quarta, 4=Quinta, 5=Sexta, 6=Sábado
+- Exemplos:
+  - Tarefa toda segunda e quarta: "dias": [1, 3]
+  - Tarefa todo domingo: "dias": [0]
+  - Tarefa seg/ter/qua/sex/sab: "dias": [1, 2, 3, 5, 6]
+- NUNCA coloque os dias da semana no campo "text" da tarefa — use SEMPRE o campo "dias"
+- O campo "text" deve conter APENAS o nome limpo da tarefa, sem parênteses ou dias escritos
 
 4. Se o usuário pedir para montar o dia (1-3-5), use o formato:
 
@@ -2551,12 +2693,20 @@ function iaRenderProposal(data, msgId) {
   card.id = `ia-proposal-${msgId}`;
 
   if (data.type === 'add_to_backlog') {
-    const tasksHTML = (data.tasks || []).map(t => `
+    const DIAS_CURTO_IA = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+    const tasksHTML = (data.tasks || []).map(t => {
+      const isRecorr = t.tipo === 'recorrente';
+      const diasArr  = isRecorr && Array.isArray(t.dias) && t.dias.length > 0
+        ? t.dias.map(d => DIAS_CURTO_IA[d] || d).join(' · ')
+        : null;
+      return `
       <div class="ia-proposal-task">
         <span class="ia-proposal-task-text">${t.text.replace(/</g, '&lt;')}</span>
         <span class="ia-proposal-badge ia-badge--${t.porte || 'pequena'}">${t.porte || 'pequena'}</span>
-        <span class="ia-proposal-badge ia-badge--${t.tipo || 'unica'}">${t.tipo === 'recorrente' ? '↻' : '1×'}</span>
-      </div>`).join('');
+        <span class="ia-proposal-badge ia-badge--${isRecorr ? 'recorrente' : 'unica'}">${isRecorr ? '↻' : '1×'}</span>
+        ${diasArr ? `<span class="ia-proposal-badge ia-badge--dias">↻ ${diasArr}</span>` : ''}
+      </div>`;
+    }).join('');
 
     card.innerHTML = `
       <div class="ia-proposal-header">✦ Adicionar ao Backlog (${data.tasks.length} ${data.tasks.length === 1 ? 'tarefa' : 'tarefas'})</div>
@@ -2719,8 +2869,20 @@ function iaConfirmBacklog(msgId) {
 
   // Adiciona ao backlog
   let added = 0;
-  (data.tasks || []).forEach(t => {
-    appData.backlog.push({ text: t.text, porte: t.porte || 'pequena', tipo: t.tipo || 'unica' });
+  (data.tasks || []).forEach((t, idx) => {
+    const tipo = t.tipo === 'recorrente' ? 'recorrente' : 'unica';
+    // Garante que dias seja array de inteiros válidos (0-6) e só para recorrentes
+    const dias = tipo === 'recorrente' && Array.isArray(t.dias)
+      ? t.dias.map(d => parseInt(d, 10)).filter(d => d >= 0 && d <= 6)
+      : [];
+    appData.backlog.push({
+      id:       Date.now() + idx,
+      text:     t.text,
+      porte:    t.porte || 'pequena',
+      tipo,
+      dias,
+      arquivado: false
+    });
     added++;
   });
   save();

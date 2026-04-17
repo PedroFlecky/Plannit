@@ -3697,3 +3697,188 @@ button { cursor: pointer; }
 .cl-add-btn:hover {
   background: color-mix(in srgb, var(--green) 28%, transparent);
 }
+
+/* ══════════════════════════════════════════════
+   BACKLOG — BOTÃO DE EDIÇÃO + PAINEL INLINE
+══════════════════════════════════════════════ */
+
+/* Botão ✎ editar */
+.list-item-edit {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  opacity: 0.65;
+  transition: opacity var(--t), color var(--t), background var(--t);
+}
+.list-item-edit:hover {
+  opacity: 1;
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+}
+
+/* Card com painel aberto fica levemente destacado */
+.bl-item--editing {
+  border-color: var(--green) !important;
+  background: color-mix(in srgb, var(--green) 4%, var(--surface2));
+}
+
+/* Painel de edição inline */
+.bl-edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+}
+
+/* Linha genérica */
+.bl-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Input do nome */
+.bl-edit-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color var(--t);
+}
+.bl-edit-input:focus {
+  border-color: var(--green);
+}
+
+/* Label de seção (Porte / Tipo / Dias) */
+.bl-edit-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  min-width: 36px;
+}
+
+/* Linha de chips */
+.bl-edit-row--chips {
+  flex-wrap: wrap;
+}
+.bl-edit-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Chips de porte e tipo */
+.bl-edit-chip {
+  background: transparent;
+  border: 1px solid var(--border-hi);
+  border-radius: 20px;
+  color: var(--text3);
+  font-size: 11px;
+  font-family: inherit;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.bl-edit-chip.is-active {
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+  border-color: var(--green);
+  color: var(--green);
+  font-weight: 600;
+}
+.bl-edit-chip:hover:not(.is-active) {
+  border-color: var(--text3);
+  color: var(--text);
+}
+
+/* Linha de dias da semana */
+.bl-edit-row--days {
+  flex-wrap: wrap;
+}
+.bl-edit-days {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.bl-edit-day {
+  width: 36px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border-hi);
+  background: transparent;
+  color: var(--text3);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.bl-edit-day.is-active {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  border-color: var(--green);
+  color: var(--green);
+}
+.bl-edit-day:hover:not(.is-active) {
+  border-color: var(--text3);
+  color: var(--text);
+}
+
+/* Botões salvar / cancelar */
+.bl-edit-row--actions {
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+}
+.bl-edit-save {
+  background: var(--green);
+  border: none;
+  border-radius: var(--r);
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 7px 18px;
+  cursor: pointer;
+  transition: opacity var(--t);
+}
+.bl-edit-save:hover { opacity: 0.85; }
+
+.bl-edit-cancel {
+  background: transparent;
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r);
+  color: var(--text3);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: border-color var(--t), color var(--t);
+}
+.bl-edit-cancel:hover {
+  border-color: var(--text3);
+  color: var(--text);
+}
+
+/* Badge de dias no card de proposta da IA */
+.ia-badge--dias {
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green) 35%, transparent);
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 2px 7px;
+  letter-spacing: 0.3px;
+}
